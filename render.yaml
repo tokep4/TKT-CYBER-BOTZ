@@ -2,7 +2,7 @@
 version: "1"
 services:
 - type: web
-  name: TKT-CYBER-BOTZ-
+  name: TKT-CYBER-BOTZ
   runtime: docker
   repo: https://github.com/TKTTECH1/TKT-CYBER-BOTZ
   plan: free
