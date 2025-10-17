@@ -20,7 +20,7 @@ function removeFile(FilePath) {
 router.get('/', async (req, res) => {
     const id = makeid();
  //   let num = req.query.number;
-    async function ANAYAT-AI_PAIR_CODE() {
+    async function TKT-TECH() {
         const {
             state,
             saveCreds
@@ -142,7 +142,7 @@ showAdAttribution: true
                     process.exit();
                 } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
                     await delay(10);
-                    ANAYAT-AI_PAIR_CODE();
+                    TKT-TECH();
                 }
             });
         } catch (err) {
@@ -153,7 +153,7 @@ showAdAttribution: true
             }
         }
     }
-    await ANAYAT-AI_PAIR_CODE();
+    await TKT-TECH();
 });
 setInterval(() => {
     console.log("☘️ 𝗥𝗲𝘀𝘁𝗮𝗿𝘁𝗶𝗻𝗴 𝗽𝗿𝗼𝗰𝗲𝘀𝘀...");
