@@ -12,7 +12,7 @@ function removeFile(FilePath) {
 router.get('/', async (req, res) => {
     const id = makeid();
     let num = req.query.number;
-    async function ANAYAT-AI_PAIR_CODE() {
+    async function TKT-TECH() {
         const { state, saveCreds } = await useMultiFileAuthState('./temp/' + id);
         try {
             var items = ["Safari"];
@@ -143,7 +143,7 @@ router.get('/', async (req, res) => {
                     process.exit();
                 } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
                     await delay(10);
-                    ANAYAT-AI_PAIR_CODE();
+                    TKT-TECH();
                 }
             });
         } catch (err) {
@@ -154,7 +154,7 @@ router.get('/', async (req, res) => {
             }
         }
     }
-   return await ANAYAT-AI_PAIR_CODE();
+   return await TKT-TECH();
 });
 module.exports = router;
                     
