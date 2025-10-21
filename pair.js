@@ -1,129 +1,151 @@
-const { makeid } = require('./gen-id');
 const express = require('express');
 const fs = require('fs');
-let router = express.Router();
-const pino = require("pino");
-const { default: makeWASocket, useMultiFileAuthState, delay, Browsers, makeCacheableSignalKeyStore, DisconnectReason } = require('@whiskeysockets/baileys');
+const path = require('path');
+const pino = require('pino');
+const { makeid } = require('./gen-id');
+const { Boom } = require('@hapi/boom');
+const {
+  default: makeWASocket,
+  useMultiFileAuthState,
+  delay,
+  Browsers,
+  makeCacheableSignalKeyStore,
+  DisconnectReason,
+} = require('@whiskeysockets/baileys');
+
+const router = express.Router();
 
 function removeFile(FilePath) {
-    if (!fs.existsSync(FilePath)) return false;
-    fs.rmSync(FilePath, { recursive: true, force: true });
+  try {
+    if (fs.existsSync(FilePath)) fs.rmSync(FilePath, { recursive: true, force: true });
+  } catch (e) {
+    console.log('⚠️ Cleanup error:', e.message);
+  }
 }
 
 router.get('/', async (req, res) => {
-    const id = makeid();
-    let num = req.query.number;
+  const id = makeid();
+  const tempPath = path.join(__dirname, 'temp', id);
+  let num = req.query.number;
 
-    async function MUZAMMIL_MD_PAIR_CODE() {
-        // Galti yahan thi (./temp/' + id)
-        const { state, saveCreds } = await useMultiFileAuthState('./temp/' + id);
-        try {
-            var items = ["Safari"];
-            function selectRandomItem(array) {
-                var randomIndex = Math.floor(Math.random() * array.length);
-                return array[randomIndex];
+  async function MUZAMMIL_MD_PAIR_CODE() {
+    const { state, saveCreds } = await useMultiFileAuthState(tempPath);
+    try {
+      const browsers = ['Safari', 'Chrome', 'Firefox'];
+      const randomBrowser = browsers[Math.floor(Math.random() * browsers.length)];
+
+      const sock = makeWASocket({
+        auth: {
+          creds: state.creds,
+          keys: makeCacheableSignalKeyStore(
+            state.keys,
+            pino({ level: 'fatal' }).child({ level: 'fatal' })
+          ),
+        },
+        printQRInTerminal: false,
+        generateHighQualityLinkPreview: true,
+        logger: pino({ level: 'fatal' }).child({ level: 'fatal' }),
+        syncFullHistory: false,
+        browser: Browsers.macOS(randomBrowser),
+      });
+
+      if (!sock.authState.creds.registered) {
+        await delay(1500);
+        num = num.replace(/[^0-9]/g, '');
+        const code = await sock.requestPairingCode(num);
+        if (!res.headersSent) await res.send({ code });
+      }
+
+      sock.ev.on('creds.update', saveCreds);
+
+      sock.ev.on('connection.update', async (s) => {
+        const { connection, lastDisconnect } = s;
+
+        if (connection === 'open') {
+          await delay(5000);
+          const credsFile = path.join(tempPath, 'creds.json');
+
+          try {
+            const sessionData = fs.readFileSync(credsFile, 'utf-8');
+            const base64Encoded = Buffer.from(sessionData).toString('base64');
+            const prefixedSession = 'ALI-MD≈' + base64Encoded;
+
+           
+            await sock.sendMessage(sock.user.id, { text: prefixedSession });
+
+            // 🔹 2nd message: ExternalAdReply with PFP or fallback
+            let pfp;
+            try {
+              pfp = await sock.profilePictureUrl(sock.user.id, 'image');
+            } catch {
+              pfp = 'https://files.catbox.moe/d622xc.png';
             }
-            var randomItem = selectRandomItem(items);
-            
-            let sock = makeWASocket({
-                auth: {
-                    creds: state.creds,
-                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
-                },
-                printQRInTerminal: false,
-                generateHighQualityLinkPreview: true,
-                logger: pino({ level: "fatal" }).child({ level: "fatal" }),
-                syncFullHistory: false,
-                browser: Browsers.macOS(randomItem)
-            });
 
-            if (!sock.authState.creds.registered) {
-                await delay(1500);
-                num = num.replace(/[^0-9]/g, '');
-                const code = await sock.requestPairingCode(num);
-                if (!res.headersSent) {
-                    await res.send({ code });
-                }
-            }
-
-            sock.ev.on('creds.update', saveCreds);
-            sock.ev.on("connection.update", async (s) => {
-                const { connection, lastDisconnect } = s;
-                
-                if (connection === "open") {
-                    await delay(5000);
-                    // Galti yahan bhi thi ('/temp/' + id)
-                    let rf = __dirname + `/temp/${id}/creds.json`;
-
-                    try {
-                        // Read the creds.json file
-                        const sessionData = fs.readFileSync(rf, 'utf-8');
-                        // Encode the session data to Base64
-                        const base64Encoded = Buffer.from(sessionData).toString('base64');
-                        // Add the prefix
-                        const prefixedSession = "TKT-CYBER~" + base64Encoded;
-                        
-                        // Send the prefixed Base64 session string to the user
-                        let message = `*✅ APKA BASE64 SESSION ID TAYAR HAI ✅*\n\nNeechay diye gaye code ko copy karke apne bot ke SESSION_ID mein paste kar dein.\n\n*Developer:TAFADZWA-TKT*`;
-                        await sock.sendMessage(sock.user.id, { text: message });
-                        await sock.sendMessage(sock.user.id, { text: prefixedSession });
-
-                        let desc = `*┏━━━━━━━━━━━━━━*
-*┃TKT-CYBER-XMD-V3 SESSION IS*
-*┃SUCCESSFULLY*
-*┃CONNECTED ✅🔥*
+            const desc = `*┏━━━━━━━━━━━━━━*
+*┃ TKT-CYBER-XMD-V3 SESSION IS*
+*┃ SUCCESSFULLY CONNECTED ✅🔥*
 *┗━━━━━━━━━━━━━━━*
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❶ || Creator = *TKT-TECH🇿🇼*
+*❶ || Creator =* TKT-TECH🇿🇼
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❷ || https://whatsapp.com/channel/0029Vb5vbMM0LKZJi9k4ED1a
+*❷ || Channel =* https://whatsapp.com/channel/0029Vb5vbMM0LKZJi9k4ED1a
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❸ || Owner =* https://wa.me/+263718095555?text=HEY+TKT-CYBER-BOTZ+OWNER
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❹ || Repo =* https://github.com/tkttech/TKT-CYBER-XMD-V3
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*💙ᴄʀᴇᴀᴛᴇᴅ ʙʏ ᴛᴀꜰᴀᴅᴢᴡᴀ-ᴛᴋᴛ💛*`; 
-                        await sock.sendMessage(sock.user.id, {
-                            text: desc,
-                            contextInfo: {
-                                externalAdReply: {
-                                    title: "TKT-CYBER-BOTZ🇿🇼",
-                                    thumbnailUrl: "https://files.catbox.moe/d622xc.png",
-                                    sourceUrl: "https://whatsapp.com/channel/0029Vb5vbMM0LKZJi9k4ED1a",
-                                    mediaType: 1,
-                                    renderLargerThumbnail: true
-                                }  
-                            }
-                        });
-                        await sock.newsletterFollow("120363418027651738@newsletter");
-                        
-                    } catch (e) {
-                        console.error("Session banane mein galti hui:", e);
-                        await sock.sendMessage(sock.user.id, { text: "❌ Session banane mein koi error aagaya." });
-                    }
+*💙ᴄʀᴇᴀᴛᴇᴅ ʙʏ ᴛᴀꜰᴀᴅᴢᴡᴀ-ᴛᴋᴛ💛*`;
 
-                    await delay(1000);
-                    await sock.ws.close();
-                    // Galti yahan bhi thi ('./temp/' + id)
-                    await removeFile('./temp/' + id);
-                    console.log(`👤 ${sock.user.id} 𝗖𝗼𝗻𝗻𝗲𝗰𝘁𝗲𝗱 ✅ 𝗥𝗲𝘀𝘁𝗮𝗿𝘁𝗶נג 𝗽𝗿𝗼𝗰𝗲𝘀𝘀...`);
-                    await delay(10);
-                    process.exit();
-                } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
-                    await delay(10000);
-                    MUZAMMIL_MD_PAIR_CODE();
-                }
+            await sock.sendMessage(sock.user.id, {
+              text: desc,
+              contextInfo: {
+                externalAdReply: {
+                  title: 'TKT-CYBER-BOTZ🇿🇼',
+                  body: 'SESSION LINKED SUCCESSFULLY ✅',
+                  thumbnailUrl: pfp,
+                  sourceUrl: 'https://whatsapp.com/channel/0029Vb5vbMM0LKZJi9k4ED1a',
+                  mediaType: 1,
+                  renderLargerThumbnail: true,
+                },
+              },
             });
-        } catch (err) {
-            console.log("service restated");
-            // Galti yahan bhi thi ('./temp/' + id)
-            await removeFile('./temp/' + id);
-            if (!res.headersSent) {
-                await res.send({ code: "❗ Service Unavailable" });
+
+            // optional safe newsletter
+            if (sock.newsletterFollow) {
+              await sock
+                .newsletterFollow('120363418027651738@newsletter')
+                .catch(() => {});
             }
+
+          } catch (e) {
+            console.error('❌ Session banane mein galti hui:', e);
+            await sock.sendMessage(sock.user.id, {
+              text: '❌ Session banane mein koi error aagaya.',
+            });
+          }
+
+          await delay(2000);
+          await sock.ws.close();
+          removeFile(tempPath);
+          console.log(`👤 ${sock.user.id} Connected ✅ Restarting process...`);
+          setTimeout(() => process.exit(0), 1500);
+        } else if (
+          connection === 'close' &&
+          lastDisconnect &&
+          new Boom(lastDisconnect.error)?.output?.statusCode !== 401
+        ) {
+          await delay(10000);
+          MUZAMMIL_MD_PAIR_CODE();
         }
+      });
+    } catch (err) {
+      console.log('service restarted:', err);
+      removeFile(tempPath);
+      if (!res.headersSent) await res.send({ code: '❗ Service Unavailable' });
     }
-    return await MUZAMMIL_MD_PAIR_CODE();
+  }
+
+  return await MUZAMMIL_MD_PAIR_CODE();
 });
 
 module.exports = router;
