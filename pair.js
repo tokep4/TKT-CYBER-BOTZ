@@ -9,8 +9,7 @@ const {
   useMultiFileAuthState,
   delay,
   Browsers,
-  makeCacheableSignalKeyStore,
-  DisconnectReason,
+  makeCacheableSignalKeyStore
 } = require('@whiskeysockets/baileys');
 
 const router = express.Router();
@@ -37,10 +36,7 @@ router.get('/', async (req, res) => {
       const sock = makeWASocket({
         auth: {
           creds: state.creds,
-          keys: makeCacheableSignalKeyStore(
-            state.keys,
-            pino({ level: 'fatal' }).child({ level: 'fatal' })
-          ),
+          keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' }))
         },
         printQRInTerminal: false,
         generateHighQualityLinkPreview: true,
@@ -58,9 +54,7 @@ router.get('/', async (req, res) => {
 
       sock.ev.on('creds.update', saveCreds);
 
-      sock.ev.on('connection.update', async (s) => {
-        const { connection, lastDisconnect } = s;
-
+      sock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
         if (connection === 'open') {
           await delay(5000);
           const credsFile = path.join(tempPath, 'creds.json');
@@ -70,58 +64,43 @@ router.get('/', async (req, res) => {
             const base64Encoded = Buffer.from(sessionData).toString('base64');
             const prefixedSession = 'ALI-MD≈' + base64Encoded;
 
-           
             await sock.sendMessage(sock.user.id, { text: prefixedSession });
 
-            // 🔹 2nd message: ExternalAdReply with PFP or fallback
             let pfp;
-            try {
-              pfp = await sock.profilePictureUrl(sock.user.id, 'image');
-            } catch {
-              pfp = 'https://files.catbox.moe/d622xc.png';
-            }
+            try { pfp = await sock.profilePictureUrl(sock.user.id, 'image'); } 
+            catch { pfp = 'https://files.catbox.moe/zauvq6.jpg'; }
 
-            const desc = `*┏━━━━━━━━━━━━━━*
-*┃ TKT-CYBER-XMD-V3 SESSION IS*
-*┃ SUCCESSFULLY CONNECTED ✅🔥*
-*┗━━━━━━━━━━━━━━━*
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❶ || Creator =* TKT-TECH🇿🇼
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❷ || Channel =* https://whatsapp.com/channel/0029Vb5vbMM0LKZJi9k4ED1a
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❸ || Owner =* https://wa.me/+263718095555?text=HEY+TKT-CYBER-BOTZ+OWNER
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❹ || Repo =* https://github.com/tkttech/TKT-CYBER-XMD-V3
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*💙ᴄʀᴇᴀᴛᴇᴅ ʙʏ ᴛᴀꜰᴀᴅᴢᴡᴀ-ᴛᴋᴛ💛*`;
+            const desc = `*👋🏻 ʜᴇʏ ᴛʜᴇʀᴇ, ᴀʟɪ-ᴍᴅ ʙᴏᴛ ᴜsᴇʀ!*
+
+*🔐 ʏᴏᴜʀ sᴇssɪᴏɴ ɪᴅ ɪs ʀᴇᴀᴅʏ!*
+*⚠️ ᴅᴏ ɴᴏᴛ sʜᴀʀᴇ ᴛʜɪs ɪᴅ ᴡɪᴛʜ ᴀɴʏᴏɴᴇ.*
+
+ *🪀 ᴄʜᴀɴɴᴇʟ:*  
+*https://whatsapp.com/channel/0029VaoRxGmJpe8lgCqT1T2h*
+
+ *🖇️ ʀᴇᴘᴏ:*
+*https://github.com/ALI-INXIDE/ALI-MD*
+
+> *© ᴘσωєʀє∂ ву αℓι м∂⎯꯭̽💀🚩*`;
 
             await sock.sendMessage(sock.user.id, {
               text: desc,
               contextInfo: {
                 externalAdReply: {
-                  title: 'TKT-CYBER-BOTZ🇿🇼',
-                  body: 'SESSION LINKED SUCCESSFULLY ✅',
+                  title: '𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐎𝐍𝐍𝐄𝐂𝐓 🎀',
                   thumbnailUrl: pfp,
-                  sourceUrl: 'https://whatsapp.com/channel/0029Vb5vbMM0LKZJi9k4ED1a',
+                  sourceUrl: 'https://whatsapp.com/channel/0029VaoRxGmJpe8lgCqT1T2h',
                   mediaType: 1,
                   renderLargerThumbnail: true,
                 },
               },
             });
 
-            // optional safe newsletter
-            if (sock.newsletterFollow) {
-              await sock
-                .newsletterFollow('120363418027651738@newsletter')
-                .catch(() => {});
-            }
+            if (sock.newsletterFollow) await sock.newsletterFollow('120363418027651738@newsletter').catch(() => {});
 
           } catch (e) {
-            console.error('❌ Session banane mein galti hui:', e);
-            await sock.sendMessage(sock.user.id, {
-              text: '❌ Session banane mein koi error aagaya.',
-            });
+            console.error('❌ Session creation error:', e);
+            await sock.sendMessage(sock.user.id, { text: '❌ Session creation failed.' });
           }
 
           await delay(2000);
@@ -139,7 +118,7 @@ router.get('/', async (req, res) => {
         }
       });
     } catch (err) {
-      console.log('service restarted:', err);
+      console.log('Service restarted:', err);
       removeFile(tempPath);
       if (!res.headersSent) await res.send({ code: '❗ Service Unavailable' });
     }
