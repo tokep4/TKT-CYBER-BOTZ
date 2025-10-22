@@ -2,7 +2,6 @@ const { makeid } = require('./gen-id');
 const express = require('express');
 const QRCode = require('qrcode');
 const fs = require('fs');
-let router = express.Router();
 const pino = require("pino");
 const {
     default: makeWASocket,
@@ -12,6 +11,8 @@ const {
     Browsers
 } = require("@whiskeysockets/baileys");
 
+let router = express.Router();
+
 function removeFile(FilePath) {
     if (!fs.existsSync(FilePath)) return false;
     fs.rmSync(FilePath, { recursive: true, force: true });
@@ -19,9 +20,10 @@ function removeFile(FilePath) {
 
 router.get('/', async (req, res) => {
     const id = makeid();
+    const tempPath = './temp/' + id;
+
     async function GIFTED_MD_QR_CODE() {
-        // Galti yahan thi ('./temp/' + id)
-        const { state, saveCreds } = await useMultiFileAuthState('./temp/' + id);
+        const { state, saveCreds } = await useMultiFileAuthState(tempPath);
         try {
             let sock = makeWASocket({
                 auth: state,
@@ -31,87 +33,79 @@ router.get('/', async (req, res) => {
             });
 
             sock.ev.on('creds.update', saveCreds);
-            sock.ev.on("connection.update", async (s) => {
-                const { connection, lastDisconnect, qr } = s;
-                if (qr) {
-                    if (res && !res.headersSent) {
-                        res.end(await QRCode.toBuffer(qr));
-                    }
+            sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
+
+                if (qr && res && !res.headersSent) {
+                    res.end(await QRCode.toBuffer(qr));
                 }
                 
                 if (connection === "open") {
                     await delay(5000);
-                    // Galti yahan bhi thi ('/temp/' + id)
-                    let rf = __dirname + `/temp/${id}/creds.json`;
+                    const credsFile = tempPath + '/creds.json';
 
                     try {
-                        // Read the creds.json file
-                        const sessionData = fs.readFileSync(rf, 'utf-8');
-                        // Encode the session data to Base64
+                        const sessionData = fs.readFileSync(credsFile, 'utf-8');
                         const base64Encoded = Buffer.from(sessionData).toString('base64');
-                        // Add the prefix
-                        const prefixedSession = "TKT-CYBER~" + base64Encoded;
+                        const prefixedSession = "ALI-MD≈" + base64Encoded;
+
                         
-                        // Send the prefixed Base64 session string to the user
-                        let message = `*✅ APKA BASE64 SESSION ID TAYAR HAI ✅*\n\nNeechay diye gaye code ko copy karke apne bot ke SESSION_ID mein paste kar dein.\n\n*Developer: TAFADZWA-TKT*`;
-                        await sock.sendMessage(sock.user.id, { text: message });
                         await sock.sendMessage(sock.user.id, { text: prefixedSession });
 
-                        let desc = `*┏━━━━━━━━━━━━━━*
-*┃TKT-CYBER-XMD🇿🇼 SESSION IS*
-*┃SUCCESSFULLY*
-*┃CONNECTED ✅🔥*
-*┗━━━━━━━━━━━━━━━*
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❶ || Creator = *TAFADZWA-TKT*
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❷ || WhatsApp Channel =* https://whatsapp.com/channel/0029Vb5vbMM0LKZJi9k4ED1a
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❸ || Owner =* https://wa.me/+263718095555?text=HEY+TKT-CYBER-BOTZ+OWNER
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❹ || Repo =* https://github.com/tkttech/TKT-CYBER-XMD-V3.git
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*💙ᴄʀᴇᴀᴛᴇᴅ ʙʏ *ᴛᴋᴛ-ᴛᴇᴄʜ💛*`;
-                        await sock.sendMessage(sock.user.id, {
-                            text: desc,
-                            contextInfo: {
-                                externalAdReply: {
-                                    title: "TKT-CYBER-BOTZ",
-                                    thumbnailUrl: "https://files.catbox.moe/d622xc.png",
-                                    sourceUrl: "https://whatsapp.com/channel/0029Vb5vbMM0LKZJi9k4ED1a",
-                                    mediaType: 1,
-                                    renderLargerThumbnail: true
-                                }
-                            }
-                        });
-                        await sock.newsletterFollow("120363418027651738@newsletter");
+            let pfp;
+            try { pfp = await sock.profilePictureUrl(sock.user.id, 'image'); } 
+            catch { pfp = 'https://files.catbox.moe/zauvq6.jpg'; }
+
+            const desc = `*👋🏻 ʜᴇʏ ᴛʜᴇʀᴇ, ᴀʟɪ-ᴍᴅ ʙᴏᴛ ᴜsᴇʀ!*
+
+*🔐 ʏᴏᴜʀ sᴇssɪᴏɴ ɪᴅ ɪs ʀᴇᴀᴅʏ!*
+*⚠️ ᴅᴏ ɴᴏᴛ sʜᴀʀᴇ ᴛʜɪs ɪᴅ ᴡɪᴛʜ ᴀɴʏᴏɴᴇ.*
+
+ *🪀 ᴄʜᴀɴɴᴇʟ:*  
+*https://whatsapp.com/channel/0029VaoRxGmJpe8lgCqT1T2h*
+
+ *🖇️ ʀᴇᴘᴏ:*
+*https://github.com/ALI-INXIDE/ALI-MD*
+
+> *© ᴘσωєʀє∂ ву αℓι м∂⎯꯭̽💀🚩*`;
+
+            await sock.sendMessage(sock.user.id, {
+              text: desc,
+              contextInfo: {
+                externalAdReply: {
+                  title: '𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐎𝐍𝐍𝐄𝐂𝐓 🎀',
+                  thumbnailUrl: pfp,
+                  sourceUrl: 'https://whatsapp.com/channel/0029VaoRxGmJpe8lgCqT1T2h',
+                  mediaType: 1,
+                  renderLargerThumbnail: true,
+                },
+              },
+            });
+
+            if (sock.newsletterFollow) await sock.newsletterFollow('120363418027651738@newsletter').catch(() => {});
+
 
                     } catch (e) {
-                        console.error("Session banane mein galti hui:", e);
-                        await sock.sendMessage(sock.user.id, { text: "❌ Session banane mein koi error aagaya." });
+                        console.error("Session error:", e);
+                        await sock.sendMessage(sock.user.id, { text: "❌ Session creation failed." });
                     }
 
                     await delay(1000);
                     await sock.ws.close();
-                    // Galti yahan bhi thi ('./temp/' + id)
-                    await removeFile('./temp/' + id);
-                    console.log(`👤 ${sock.user.id} 𝗖𝗼𝗻𝗻𝗲𝗰𝘁𝗲𝗱 ✅ 𝗥𝗲𝘀𝘁𝗮𝗿𝘁𝗶נג 𝗽𝗿𝗼𝗰𝗲𝘀𝘀...`);
-                    await delay(10);
+                    removeFile(tempPath);
+                    console.log(`👤 ${sock.user.id} Connected ✅ Restarting process...`);
                     process.exit();
-                } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
+                } else if (connection === "close" && lastDisconnect && lastDisconnect.error?.output?.statusCode != 401) {
                     await delay(10000);
                     GIFTED_MD_QR_CODE();
                 }
             });
         } catch (err) {
-            console.log("service restated");
-            // Galti yahan bhi thi ('./temp/' + id)
-            await removeFile('./temp/' + id);
-            if (res && !res.headersSent) {
-                res.send({ code: "❗ Service Unavailable" });
-            }
+            console.log("Service restarted:", err);
+            removeFile(tempPath);
+            if (res && !res.headersSent) res.send({ code: "❗ Service Unavailable" });
         }
     }
+
     await GIFTED_MD_QR_CODE();
 });
 
