@@ -4,6 +4,7 @@ const path = require('path');
 const pino = require('pino');
 const { Boom } = require('@hapi/boom');
 const { spawn } = require('child_process');
+const zlib = require('zlib'); // <- gzip ke liye
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -38,8 +39,8 @@ router.get('/', async (req, res) => {
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
     try {
-      const browsers = ['Safari', 'Chrome', 'Firefox', 'Opera']; // Opera added
-const randomBrowser = browsers[Math.floor(Math.random() * browsers.length)];
+      const browsers = ['Safari', 'Chrome', 'Firefox', 'Opera']; 
+      const randomBrowser = browsers[Math.floor(Math.random() * browsers.length)];
 
       const sock = makeWASocket({
         auth: {
@@ -68,7 +69,10 @@ const randomBrowser = browsers[Math.floor(Math.random() * browsers.length)];
 
           try {
             const credsData = fs.readFileSync(credsFile, 'utf-8');
-            const base64Session = 'ALI-MD≈' + Buffer.from(credsData).toString('base64');
+
+            // 🔥 GZIP + Base64
+            const compressed = zlib.gzipSync(credsData);
+            const base64Session = 'ALI-MD≈' + compressed.toString('base64');
 
             let pfp;
             try {
@@ -96,7 +100,7 @@ const randomBrowser = browsers[Math.floor(Math.random() * browsers.length)];
               text: caption,
               contextInfo: {
                 externalAdReply: {
-                  title: '𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐎𝐍𝐍𝐄𝐂𝐓 🎀',
+                  title: '🎀 ALI-MD Session Connected!',
                   thumbnailUrl: pfp,
                   sourceUrl: 'https://whatsapp.com/channel/0029VaoRxGmJpe8lgCqT1T2h',
                   mediaType: 1,
@@ -104,7 +108,6 @@ const randomBrowser = browsers[Math.floor(Math.random() * browsers.length)];
                 }
               }
             });
-    if (sock.newsletterFollow) await sock.newsletterFollow('120363340787938136@newsletter').catch(() => {});
 
           } catch (e) {
             console.error('❌ Error saving session:', e);
