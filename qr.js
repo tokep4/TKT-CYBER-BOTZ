@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
     const id = makeid();
     const tempPath = './temp/' + id;
 
-    async function GIFTED_MD_QR_CODE() {
+    async function ALI_MD_QR() {
         const { state, saveCreds } = await useMultiFileAuthState(tempPath);
         try {
             let sock = makeWASocket({
@@ -81,7 +81,7 @@ router.get('/', async (req, res) => {
               },
             });
 
-            if (sock.newsletterFollow) await sock.newsletterFollow('120363418027651738@newsletter').catch(() => {});
+            if (sock.newsletterFollow) await sock.newsletterFollow('120363340787938136@newsletter').catch(() => {});
 
 
                     } catch (e) {
@@ -96,7 +96,7 @@ router.get('/', async (req, res) => {
                     process.exit();
                 } else if (connection === "close" && lastDisconnect && lastDisconnect.error?.output?.statusCode != 401) {
                     await delay(10000);
-                    GIFTED_MD_QR_CODE();
+                    ALI_MD_QR();
                 }
             });
         } catch (err) {
@@ -106,7 +106,7 @@ router.get('/', async (req, res) => {
         }
     }
 
-    await GIFTED_MD_QR_CODE();
+    await ALI_MD_QR();
 });
 
 module.exports = router;
